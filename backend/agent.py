@@ -107,16 +107,16 @@ tools = [
 tool_node = ToolNode(tools)
 
 def get_llm():
-    # Use llama-3.3-70b-versatile via Groq because gemma2-9b-it was decommissioned
+    # Using llama3-groq-8b-8192-tool-use-preview — specifically fine-tuned for tool/function calling.
+    # Has its own separate daily token quota on Groq's free tier.
     # The API key must be set in environment variable: GROQ_API_KEY
-    # We provide a safe fallback if not present immediately during build
     api_key = os.environ.get("GROQ_API_KEY", "mock_key_if_not_provided")
-    return ChatGroq(model="llama-3.3-70b-versatile", temperature=0, groq_api_key=api_key)
+    return ChatGroq(model="llama-3.3-70b-versatile", temperature=0, max_tokens=300, groq_api_key=api_key)
 
 def call_model(state: AgentState):
     llm = get_llm()
-    # Bind tools to the LLM
-    llm_with_tools = llm.bind_tools(tools)
+    # Disable parallel tool calls — smaller models handle one tool at a time reliably.
+    llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
     
     from datetime import datetime
     current_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
