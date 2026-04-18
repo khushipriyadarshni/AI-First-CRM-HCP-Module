@@ -4,6 +4,8 @@ import { addMessage, setLoading } from '../store/chatSlice';
 import { updateFormState } from '../store/interactionSlice';
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '');
+
 export default function RightPanel() {
   const [inputText, setInputText] = useState('');
   const { messages, isLoading } = useSelector((state) => state.chat);
@@ -27,7 +29,7 @@ export default function RightPanel() {
 
     try {
       // Connect to the FastAPI Backend
-      const response = await axios.post('http://localhost:8000/api/chat', {
+      const response = await axios.post(`${API_BASE_URL}/api/chat`, {
         message: userMessage,
         current_form_state: formState
       });
@@ -42,7 +44,7 @@ export default function RightPanel() {
 
     } catch (error) {
       console.error(error);
-      let errorMsg = 'Sorry, I encountered an error. Is the Python backend running on port 8000?';
+      let errorMsg = 'Sorry, I encountered an error while contacting the backend API.';
       if (error.response && error.response.data && error.response.data.detail) {
         errorMsg = `Backend Error: ${error.response.data.detail}`;
       }

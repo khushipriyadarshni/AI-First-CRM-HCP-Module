@@ -1,9 +1,12 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
@@ -16,6 +19,9 @@ from agent import process_chat_message
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI-First CRM HCP Module")
+
+BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_DIST_DIR = BASE_DIR.parent / "frontend" / "dist"
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,3 +82,29 @@ def save_interaction(request: SaveInteractionRequest, db: Session = Depends(get_
 def list_interactions(db: Session = Depends(get_db)):
     interactions = db.query(Interaction).all()
     return interactions
+
+
+if FRONTEND_DIST_DIR.exists():
+    assets_dir = FRONTEND_DIST_DIR / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    def serve_frontend_root():
+        return FileResponse(FRONTEND_DIST_DIR / "index.html")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_frontend_spa(full_path: str):
+        requested_file = FRONTEND_DIST_DIR / full_path
+        if requested_file.exists() and requested_file.is_file():
+            return FileResponse(requested_file)
+        return FileResponse(FRONTEND_DIST_DIR / "index.html")
+else:
+    @app.get("/", include_in_schema=False)
+    def root_status():
+        return {
+            "status": "ok",
+            "message": "Backend is running.",
+            "docs": "/docs",
+            "api_health_hint": "Use /docs to test API endpoints."
+        }

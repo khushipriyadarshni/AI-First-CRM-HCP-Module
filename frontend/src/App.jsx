@@ -6,13 +6,15 @@ import { useSelector, useDispatch } from 'react-redux';
 import { resetForm } from './store/interactionSlice';
 import { addMessage } from './store/chatSlice';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '');
+
 function App() {
   const formState = useSelector((state) => state.interaction);
   const dispatch = useDispatch();
 
   const handleSaveToDatabase = async () => {
     try {
-      const resp = await axios.post('http://localhost:8000/api/interactions', {
+      const resp = await axios.post(`${API_BASE_URL}/api/interactions`, {
         form_state: formState
       });
       if(resp.data.status === 'success') {
